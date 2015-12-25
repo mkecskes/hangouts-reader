@@ -87,21 +87,17 @@ You can view the source code <a href="https://github.com/Jessecar96/hangouts-rea
 	<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/1.2.1/twemoji.min.js"></script>
 	<script type="text/javascript">
-
 	var Hangouts      = {}; // Main object for raw hangouts data
 	var Conversations = {};
 	var all_participants = {};
-
 	$(document).on('change', '.btn-file :file', function() {
 		var input    = $(this),
 			numFiles = input.get(0).files ? input.get(0).files.length : 1,
 			label    = input.val().replace(/\\/g, '/').replace(/.*\//, '');
 		input.trigger('fileselect', [numFiles, label]);
 	});
-
 	$('.btn-file :file').on('fileselect', function(event, numFiles, label) {
 		$('.file-name').val(label);
-
 		// Process file
 		var file = document.getElementById("file-upload").files[0];
 		if (file) {
@@ -117,54 +113,40 @@ You can view the source code <a href="https://github.com/Jessecar96/hangouts-rea
 			}
 		}
 	});
-
 	function processData() {
-
 		// First we want to get all participants, so we loop fully once
 		for(key in Hangouts['conversation_state']) {
 			var conversation = Hangouts['conversation_state'][key]['conversation_state']['conversation'];
-
 			// Get all participants
 			for(person_key in conversation['participant_data']){
 				var person  = conversation['participant_data'][person_key];
 				var gaia_id = person['id']['gaia_id'];
-
 				if(!person['fallback_name'] || person['fallback_name'] == null) continue;
-
 				if(!all_participants[gaia_id])
 					all_participants[gaia_id] = person['fallback_name'];
 			}
-
 		}
-
 		for(key in Hangouts['conversation_state']) {
-
 			var conversation_state = Hangouts['conversation_state'][key];
 			var id = conversation_state['conversation_id']['id'];
 			var conversation = conversation_state['conversation_state']['conversation'];
-
 			// Find participants
 			var participants = [], participants_obj = {};
-
 			for(person_key in conversation['participant_data']){
 				var person  = conversation['participant_data'][person_key];
 				var gaia_id = person['id']['gaia_id'];
 				var name = "Unknown";
-
 				if(person['fallback_name']){
 					name = person['fallback_name'];
 				}else{
 					name = all_participants[gaia_id];
 				}
-
 				participants.push(name);
 				participants_obj[gaia_id] = name;
 			}
 			var participants_string = participants.join(", ");
-
 			// Add to list
 			$(".convo-list").append("<a href=\"javascript:void(0);\" onclick=\"switchConvo('"+id+"')\" class=\"list-group-item\">" + participants_string + "</a>");
-
 			// Parse events
 			var events = [];
 			for(event_key in conversation_state['conversation_state']['event']){
@@ -173,14 +155,12 @@ You can view the source code <a href="https://github.com/Jessecar96/hangouts-rea
 				var message = "";
 				var timestamp = convo_event['timestamp'];
 				if(convo_event['chat_message']){
-
 					// Get message
 					for(msg_key in convo_event['chat_message']['message_content']['segment']){
 						var segment = convo_event['chat_message']['message_content']['segment'][msg_key];
 						if(!segment['text']) continue;
 						message += twemoji.parse(segment['text']);
 					}
-
 					// Check for images on event
 					if(convo_event['chat_message']['message_content']['attachment']){
 						for(var attach_key in convo_event['chat_message']['message_content']['attachment']){
@@ -191,11 +171,9 @@ You can view the source code <a href="https://github.com/Jessecar96/hangouts-rea
 							}
 						}
 					}
-
 					events.push({sender: participants_obj[sender], message: message, timestamp: timestamp});
 				}
 			}
-
 			// Sort events by timestamp
 			events.sort(function(a, b){
 				var keyA = a.timestamp,
@@ -204,20 +182,26 @@ You can view the source code <a href="https://github.com/Jessecar96/hangouts-rea
 				if(keyA > keyB) return 1;
 				return 0;
 			});
-
 			// Add events
 			Conversations[id] = events;
-
 		}
 	}
-
 	function switchConvo(id){
 		$('.txt').text('');
 		for(var event_id in Conversations[id]){
 			var convo_event = Conversations[id][event_id];
-			$('.txt').append(convo_event.sender + ": " + convo_event.message + "\n");
+            var timestamp = Math.floor(convo_event.timestamp/1000);
+            var date = new Date(timestamp);
+            
+            var year = date.getFullYear();
+            var month = "0" + (date.getMonth() + 1);
+            var day = "0" + date.getDate();
+            var hours = date.getHours();
+            var minutes = "0" + date.getMinutes();
+            var seconds = "0" + date.getSeconds();
+            var formattedTime = year + "-" + month.substr(-2) + "-" + day.substr(-2) + " " + hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+			$('.txt').append(convo_event.sender + " (" + formattedTime + "): " + convo_event.message + "\n");
 		}
 	}
-
 	</script>
 </html>
